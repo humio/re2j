@@ -26,7 +26,8 @@ public class ProgTest {
           + "2       rune \"nz\" -> 3\n"
           + "3       match\n"
     },
-    {"", "0       fail\n" + "1*      nop -> 2\n" + "2       match\n"},
+    {"", "0       fail\n" + "1       nop -> 2\n" + "2*      match\n"},
+    {"(?:a|)", "0       fail\n" + "1       rune1 \"a\" -> 4\n" + "2       nop -> 4\n" + "3*      alt -> 1, 4\n" + "4       match\n"},
     {
       "a?",
       "0       fail\n" + "1       rune1 \"a\" -> 3\n" + "2*      alt -> 1, 3\n" + "3       match\n"
