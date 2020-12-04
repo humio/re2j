@@ -99,6 +99,9 @@ class Machine {
   private int[] matchcap;
   private int ncap;
 
+  private MachineInput theInput;
+  private int curFlag;
+
   /**
    * Constructs a matching Machine for the specified {@code RE2}.
    */
@@ -214,12 +217,8 @@ class Machine {
       rune1 = r >> 3;
       width1 = r & 7;
     }
-    int flag; // bitmask of EMPTY_* flags
-    if (pos == 0) {
-      flag = Utils.emptyOpContext(-1, rune);
-    } else {
-      flag = in.context(pos);
-    }
+    curFlag = -1;
+    theInput = in;
     for (; ; ) {
 
       if (runq.isEmpty()) {
@@ -252,11 +251,11 @@ class Machine {
         if (ncap > 0) {
           matchcap[0] = pos;
         }
-        add(runq, prog.start, pos, matchcap, flag, null);
+        add(runq, prog.start, pos, matchcap, null);
       }
       int nextPos = pos + width;
-      flag = in.context(nextPos);
-      step(runq, nextq, pos, nextPos, rune, flag, anchor, pos == in.endPos());
+      curFlag = -1;
+      step(runq, nextq, pos, nextPos, rune, anchor, pos == in.endPos());
       if (width == 0) { // EOF
         break;
       }
@@ -294,7 +293,6 @@ class Machine {
       int pos,
       int nextPos,
       int c,
-      int nextCond,
       int anchor,
       boolean atEnd) {
     boolean longest = re2.longest;
@@ -346,7 +344,7 @@ class Machine {
           throw new IllegalStateException("bad inst");
       }
       if (add) {
-        t = add(nextq, i.out, nextPos, t.cap, nextCond, t);
+	t = add(nextq, i.out, nextPos, t.cap, t);
       }
       if (t != null) {
         free(t);
@@ -361,7 +359,7 @@ class Machine {
   // from |pc| by following empty-width conditions satisfied by |cond|.  |pos|
   // gives the current position in the input.  |cond| is a bitmask of EMPTY_*
   // flags.
-  private Thread add(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+  private Thread add(Queue q, int pc, int pos, int[] cap, Thread t) {
     if (pc == 0) {
       return t;
     }
@@ -379,28 +377,32 @@ class Machine {
 
       case Inst.ALT:
       case Inst.ALT_MATCH:
-        t = add(q, inst.out, pos, cap, cond, t);
-        t = add(q, inst.arg, pos, cap, cond, t);
+        t = add(q, inst.out, pos, cap, t);
+        t = add(q, inst.arg, pos, cap, t);
         break;
 
       case Inst.EMPTY_WIDTH:
+	  int cond = this.curFlag;
+	  if (cond < 0) {
+	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	  }
         if ((inst.arg & ~cond) == 0) {
-          t = add(q, inst.out, pos, cap, cond, t);
+          t = add(q, inst.out, pos, cap, t);
         }
         break;
 
       case Inst.NOP:
-        t = add(q, inst.out, pos, cap, cond, t);
+        t = add(q, inst.out, pos, cap, t);
         break;
 
       case Inst.CAPTURE:
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
           cap[inst.arg] = pos;
-          add(q, inst.out, pos, cap, cond, null);
+          add(q, inst.out, pos, cap, null);
           cap[inst.arg] = opos;
         } else {
-          t = add(q, inst.out, pos, cap, cond, t);
+          t = add(q, inst.out, pos, cap, t);
         }
         break;
 
