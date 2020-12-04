@@ -60,6 +60,7 @@ class Machine {
       return j;
     }
 
+    /*
     void remove(int j) {
         denseThreads[j] = null;
 	if (j == size-1) {
@@ -67,6 +68,7 @@ class Machine {
 	    while (size>0 && denseThreads[size-1] == null) size--;
 	}
     }
+    */
 
     void clear() {
       size = 0;
@@ -107,6 +109,9 @@ class Machine {
   // Capture information for the match.
   private int[] matchcap;
   private int ncap;
+
+    private MachineInput theInput;
+  private int curFlag;
 
   /**
    * Constructs a matching Machine for the specified {@code RE2}.
@@ -225,12 +230,14 @@ class Machine {
       rune1 = r >> 3;
       width1 = r & 7;
     }
-    int flag; // bitmask of EMPTY_* flags
-    if (pos == 0) {
-      flag = Utils.emptyOpContext(-1, rune);
-    } else {
-      flag = in.context(pos);
-    }
+    curFlag = -1;
+    theInput = in;
+    // int flag; // bitmask of EMPTY_* flags
+    // if (pos == 0) {
+    //   flag = Utils.emptyOpContext(-1, rune);
+    // } else {
+    //   flag = in.context(pos);
+    // }
     for (; ; ) {
 
       if (runq.isEmpty()) {
@@ -263,11 +270,11 @@ class Machine {
         if (ncap > 0) {
           matchcap[0] = pos;
         }
-        add(runq, prog.start, pos, matchcap, flag, null);
+        add(runq, prog.start, pos, matchcap/*, flag*/, null);
       }
       int nextPos = pos + width;
-      flag = in.context(nextPos);
-      step(runq, nextq, pos, nextPos, rune, flag, anchor, pos == in.endPos());
+      curFlag = -1;//flag = in.context(nextPos);
+      step(runq, nextq, pos, nextPos, rune/*, flag*/, anchor, pos == in.endPos());
       if (width == 0) { // EOF
         break;
       }
@@ -305,7 +312,7 @@ class Machine {
       int pos,
       int nextPos,
       int c,
-      int nextCond,
+      //int nextCond,
       int anchor,
       boolean atEnd) {
     boolean longest = re2.longest;
@@ -359,7 +366,7 @@ class Machine {
           throw new IllegalStateException("bad inst");
       }
       if (add) {
-        t = add(nextq, i.out, nextPos, t.cap, nextCond, t);
+	  t = add(nextq, i.out, nextPos, t.cap/*, nextCond*/, t);
       }
       if (t != null) {
         free(t);
@@ -376,7 +383,7 @@ class Machine {
   // from |pc| by following empty-width conditions satisfied by |cond|.  |pos|
   // gives the current position in the input.  |cond| is a bitmask of EMPTY_*
   // flags.
-  private Thread add(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+  private Thread add(Queue q, int pc, int pos, int[] cap/*, int cond*/, Thread t) {
     // if (pc == 0) {
     //   return t;
     // }
@@ -384,12 +391,12 @@ class Machine {
     if (toAdd == null) prog.addList[pc] = toAdd = computeAdd(pc);
     int len = toAdd.length;
     for (int i=0; i<len; i++) {
-	t = addLeaf(q, toAdd[i], pos, cap, cond, t);
+	t = addLeaf(q, toAdd[i], pos, cap/*, cond*/, t);
     }
     return t;
   }
 
-  private Thread addLeaf(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+  private Thread addLeaf(Queue q, int pc, int pos, int[] cap/*, int cond*/, Thread t) {
     if (q.contains(pc)) {
       return t;
     }
@@ -400,8 +407,12 @@ class Machine {
         throw new IllegalStateException("unhandled");
 
       case Inst.EMPTY_WIDTH:
+	  int cond = this.curFlag;
+	  if (cond < 0) {
+	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	  }
         if ((inst.arg & ~cond) == 0) {
-          t = add0(q, inst.out, pos, cap, cond, t);
+	    t = add0(q, inst.out, pos, cap/*, cond*/, t);
         }
         break;
 
@@ -409,10 +420,10 @@ class Machine {
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
           cap[inst.arg] = pos;
-          add0(q, inst.out, pos, cap, cond, null);
+          add0(q, inst.out, pos, cap/*, cond*/, null);
           cap[inst.arg] = opos;
         } else {
-          t = add0(q, inst.out, pos, cap, cond, t);
+	    t = add0(q, inst.out, pos, cap/*, cond*/, t);
         }
         break;
 
@@ -436,7 +447,7 @@ class Machine {
     return t;
   }
     
-  private Thread add0(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+    private Thread add0(Queue q, int pc, int pos, int[] cap/*, int cond*/, Thread t) {
     if (pc == 0) {
       return t;
     }
@@ -454,28 +465,32 @@ class Machine {
 
       case Inst.ALT:
       case Inst.ALT_MATCH:
-        t = add(q, inst.out, pos, cap, cond, t);
-        t = add(q, inst.arg, pos, cap, cond, t);
+        t = add(q, inst.out, pos, cap/*, cond*/, t);
+        t = add(q, inst.arg, pos, cap/*, cond*/, t);
         break;
 
       case Inst.EMPTY_WIDTH:
+	  int cond = this.curFlag;
+	  if (cond < 0) {
+	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	  }
         if ((inst.arg & ~cond) == 0) {
-          t = add(q, inst.out, pos, cap, cond, t);
+          t = add(q, inst.out, pos, cap/*, cond*/, t);
         }
         break;
 
       case Inst.NOP:
-        t = add(q, inst.out, pos, cap, cond, t);
+        t = add(q, inst.out, pos, cap/*, cond*/, t);
         break;
 
       case Inst.CAPTURE:
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
           cap[inst.arg] = pos;
-          add(q, inst.out, pos, cap, cond, null);
+          add(q, inst.out, pos, cap/*, cond*/, null);
           cap[inst.arg] = opos;
         } else {
-          t = add(q, inst.out, pos, cap, cond, t);
+          t = add(q, inst.out, pos, cap/*, cond*/, t);
         }
         break;
 
