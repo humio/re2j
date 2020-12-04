@@ -50,6 +50,7 @@ class Compiler {
     Frag f = c.compile(re);
     c.prog.patch(f.out, c.newInst(Inst.MATCH).i);
     c.prog.start = f.i;
+    assignThreadIDsToInstructions(c.prog);
     return c.prog;
   }
 
@@ -259,6 +260,27 @@ class Compiler {
         }
       default:
         throw new IllegalStateException("regexp: unhandled case in compile");
+    }
+  }
+
+  private static void assignThreadIDsToInstructions(Prog prog) {
+    int numInst = prog.numInst();
+    int nextTid = 0;
+    for (int i=0; i < numInst; i++) {
+      Inst inst = prog.getInst(i);
+      int tid;
+      switch (inst.op) {
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+      case Inst.FAIL:
+      case Inst.NOP:
+	// These are never scheduled.
+	tid = -1;
+	break;
+      default:
+	tid = nextTid++;
+      }
+      inst.tid = tid;
     }
   }
 }

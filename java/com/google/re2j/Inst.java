@@ -29,6 +29,7 @@ final class Inst {
   public static final int RUNE_ANY_NOT_NL = 11;
 
   int op;
+  int tid; // Thread ID - shared between instructions when safe, to reduce thread table size.
   int out; // all but MATCH, FAIL
   int arg; // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH
   int[] runes; // length==1 => exact match

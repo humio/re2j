@@ -43,8 +43,8 @@ class Machine {
       this.denseThreads = new Thread[n];
     }
 
-    boolean contains(int pc) {
-      int j = sparse[pc];
+      boolean contains(int pc, int tid) {
+      int j = sparse[tid];
       return j < size && densePcs[j] == pc;
     }
 
@@ -52,9 +52,9 @@ class Machine {
       return size == 0;
     }
 
-    int add(int pc) {
+    int add(int pc, int tid) {
       int j = size++;
-      sparse[pc] = j;
+      sparse[tid] = j;
       denseThreads[j] = null;
       densePcs[j] = pc;
       return j;
@@ -397,10 +397,10 @@ class Machine {
   }
 
   private Thread addLeaf(Queue q, int pc, int pos, int[] cap/*, int cond*/, Thread t) {
-    if (q.contains(pc)) {
+    if (q.contains(pc, prog.inst[pc].tid)) {
       return t;
     }
-    int d = q.add(pc);
+    int d = q.add(pc, prog.inst[pc].tid);
     Inst inst = prog.inst[pc];
     switch (inst.op) {
       default:
@@ -451,10 +451,10 @@ class Machine {
     if (pc == 0) {
       return t;
     }
-    if (q.contains(pc)) {
+    if (q.contains(pc, prog.inst[pc].tid)) {
       return t;
     }
-    int d = q.add(pc);
+    int d = q.add(pc, prog.inst[pc].tid);
     Inst inst = prog.inst[pc];
     switch (inst.op) {
       default:
