@@ -353,14 +353,8 @@ class Compiler {
 	  note = "multiple predecessors";
 	} else {
 	  int predPC = aPredecessor[i];
-	  if (predPC == -1 || prog.inst[predPC].op == Inst.RUNE1) {
-	    int rune;
-	    if (predPC == -1) {
-	      // Start-of-program - can always share.
-	      rune = -1; // Non-conflicting value
-	    } else {
-	      rune = prog.inst[predPC].runes[0];
-	    }
+	  if (predPC >= 0 && prog.inst[predPC].op == Inst.RUNE1) {
+	    int rune = prog.inst[predPC].runes[0];
 	    if (reusableTid >= 0 && !runesForLastTid.contains(rune)) {
 	      tid = reusableTid;
 	      runesForLastTid.add(rune);
@@ -375,7 +369,7 @@ class Compiler {
 	  } else {
 	    // Not an instruction which can share.
 	    tid = nextTid++;
-	    note = "non-RUNE1 predecessor: pc="+predPC+" op="+prog.inst[predPC].op;
+	    note = predPC < 0 ? "start-of-program" : "non-RUNE1 predecessor: pc="+predPC+" op="+prog.inst[predPC].op;
 	  }
 	}
       }
