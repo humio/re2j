@@ -10,6 +10,7 @@
 package com.google.re2j;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 
 // A Machine matches an input string of Unicode characters against an
 // RE2 instance using a simple NFA.
@@ -57,6 +58,14 @@ class Machine {
       denseThreads[j] = null;
       densePcs[j] = pc;
       return j;
+    }
+
+    void remove(int j) {
+        denseThreads[j] = null;
+	if (j == size-1) {
+	    size--;
+	    while (size>0 && denseThreads[size-1] == null) size--;
+	}
     }
 
     void clear() {
@@ -108,6 +117,8 @@ class Machine {
     this.q0 = new Queue(prog.numInst());
     this.q1 = new Queue(prog.numInst());
     this.matchcap = new int[prog.numCap < 2 ? 2 : prog.numCap];
+
+    if (prog.addList == null) prog.addList = new int[prog.inst.length][];
   }
 
   // init() reinitializes an existing Machine for re-use on a new input.
@@ -298,11 +309,13 @@ class Machine {
       int anchor,
       boolean atEnd) {
     boolean longest = re2.longest;
+    //int erkNThreads = 0;
     for (int j = 0; j < runq.size; ++j) {
       Thread t = runq.denseThreads[j];
       if (t == null) {
         continue;
       }
+      //erkNThreads++;
       if (longest && matched && ncap > 0 && matchcap[0] < t.cap[0]) {
         free(t);
         continue;
@@ -351,8 +364,10 @@ class Machine {
       if (t != null) {
         free(t);
         runq.denseThreads[j] = null;
+	//runq.remove(j);
       }
     }
+    //System.out.println("ERK| pos="+pos+": nThreads="+erkNThreads);
     runq.clear();
   }
 
@@ -362,6 +377,66 @@ class Machine {
   // gives the current position in the input.  |cond| is a bitmask of EMPTY_*
   // flags.
   private Thread add(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+    // if (pc == 0) {
+    //   return t;
+    // }
+    int[] toAdd = prog.addList[pc];
+    if (toAdd == null) prog.addList[pc] = toAdd = computeAdd(pc);
+    int len = toAdd.length;
+    for (int i=0; i<len; i++) {
+	t = addLeaf(q, toAdd[i], pos, cap, cond, t);
+    }
+    return t;
+  }
+
+  private Thread addLeaf(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
+    if (q.contains(pc)) {
+      return t;
+    }
+    int d = q.add(pc);
+    Inst inst = prog.inst[pc];
+    switch (inst.op) {
+      default:
+        throw new IllegalStateException("unhandled");
+
+      case Inst.EMPTY_WIDTH:
+        if ((inst.arg & ~cond) == 0) {
+          t = add0(q, inst.out, pos, cap, cond, t);
+        }
+        break;
+
+      case Inst.CAPTURE:
+        if (inst.arg < ncap) {
+          int opos = cap[inst.arg];
+          cap[inst.arg] = pos;
+          add0(q, inst.out, pos, cap, cond, null);
+          cap[inst.arg] = opos;
+        } else {
+          t = add0(q, inst.out, pos, cap, cond, t);
+        }
+        break;
+
+      case Inst.MATCH:
+      case Inst.RUNE:
+      case Inst.RUNE1:
+      case Inst.RUNE_ANY:
+      case Inst.RUNE_ANY_NOT_NL:
+        if (t == null) {
+          t = alloc(inst);
+        } else {
+          t.inst = inst;
+        }
+        if (ncap > 0 && t.cap != cap) {
+          System.arraycopy(cap, 0, t.cap, 0, ncap);
+        }
+        q.denseThreads[d] = t;
+        t = null;
+        break;
+    }
+    return t;
+  }
+    
+  private Thread add0(Queue q, int pc, int pos, int[] cap, int cond, Thread t) {
     if (pc == 0) {
       return t;
     }
@@ -422,5 +497,59 @@ class Machine {
         break;
     }
     return t;
+  }
+
+  private int[] computeAdd(int pc) {
+      //System.out.println("ERK| computeAdd("+pc+") = ?");
+      ArrayList<Integer> acc = new ArrayList<Integer>();
+      computeAdd(pc, acc);
+      //return acc.toArray(new int[acc.size()]);
+      int[] res = new int[acc.size()];
+      //System.out.println("ERK| computeAdd("+pc+") = "+acc.size()+" items");
+      for (int i=0; i<acc.size(); i++) {
+	  res[i] = acc.get(i);
+	  //System.out.println("ERK| - computeAdd("+pc+")#"+i+": "+res[i]);
+      }
+      return res;
+  }
+    
+  private void computeAdd(int pc, ArrayList<Integer> acc) {
+    if (pc == 0) {
+	return;
+    }
+    Inst inst = prog.inst[pc];
+    switch (inst.op) {
+      default:
+        throw new IllegalStateException("unhandled");
+
+      case Inst.FAIL:
+        break; // nothing
+
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+	  computeAdd(inst.out, acc);
+	  computeAdd(inst.arg, acc);
+        break;
+
+      case Inst.EMPTY_WIDTH:
+	  acc.add(pc);
+	  break;
+
+      case Inst.NOP:
+	  computeAdd(inst.out, acc);
+        break;
+
+      case Inst.CAPTURE:
+	  acc.add(pc);
+	  break;
+
+      case Inst.MATCH:
+      case Inst.RUNE:
+      case Inst.RUNE1:
+      case Inst.RUNE_ANY:
+      case Inst.RUNE_ANY_NOT_NL:
+	  acc.add(pc);
+	  break;
+    }
   }
 }

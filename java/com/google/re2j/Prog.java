@@ -22,6 +22,8 @@ final class Prog {
   int numCap = 2; // number of CAPTURE insts in re
   // 2 => implicit ( and ) for whole match $0
 
+  int[][] addList = null;
+    
   // Constructs an empty program.
   Prog() {}
 
