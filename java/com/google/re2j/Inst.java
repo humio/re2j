@@ -27,6 +27,7 @@ final class Inst {
   public static final int RUNE1 = 9;
   public static final int RUNE_ANY = 10;
   public static final int RUNE_ANY_NOT_NL = 11;
+  public static final int ALT_RUNE1 = 12; // Like alt -> A, B if A is a RUNE1 and the front of B does not match any overlap with A.
 
   int op;
   int tid; // Thread ID - shared between instructions when safe, to reduce thread table size.
@@ -123,6 +124,8 @@ final class Inst {
         return "any -> " + out;
       case RUNE_ANY_NOT_NL:
         return "anynotnl -> " + out;
+      case ALT_RUNE1:
+        return "alt_rune1 " + escapeRunes(runes) + " -> " + out + ", " + arg;
       default:
         throw new IllegalStateException("unhandled case in Inst.toString");
     }

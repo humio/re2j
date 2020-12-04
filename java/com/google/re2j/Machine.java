@@ -365,6 +365,44 @@ class Machine {
           add = c != '\n';
           break;
 
+        case Inst.ALT_RUNE1:
+	    boolean done = false;
+	    while (!done) {
+		switch (i.op) {
+		case Inst.ALT_RUNE1:
+		    add = i.matchRune(c);
+		    if (add) {
+			done = true;
+		    } else {
+			i = prog.inst[i.arg];
+		    }
+		    break;
+
+		case Inst.RUNE:
+		    add = i.matchRune(c);
+		    done = true;
+		    break;
+
+		case Inst.RUNE1:
+		    add = c == i.runes[0];
+		    done = true;
+		    break;
+
+		case Inst.RUNE_ANY:
+		    add = true;
+		    done = true;
+		    break;
+
+		case Inst.RUNE_ANY_NOT_NL:
+		    add = c != '\n';
+		    done = true;
+		    break;
+	    default:
+		throw new IllegalStateException("bad inst");
+		}
+	    }
+	    break;
+
         default:
           throw new IllegalStateException("bad inst");
       }
@@ -435,6 +473,7 @@ class Machine {
       case Inst.RUNE1:
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
+      case Inst.ALT_RUNE1:
         if (t == null) {
           t = alloc(inst);
         } else {
@@ -449,7 +488,7 @@ class Machine {
     }
     return t;
   }
-    
+
     private Thread add0(Queue q, int pc, int pos, int[] cap/*, int cond*/, Thread t) {
     if (pc == 0) {
       return t;
@@ -508,6 +547,7 @@ class Machine {
       case Inst.RUNE1:
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
+      case Inst.ALT_RUNE1:
         if (t == null) {
           t = alloc(inst);
         } else {
@@ -536,7 +576,7 @@ class Machine {
       }
       return res;
   }
-    
+
   private void computeAdd(int pc, ArrayList<Integer> acc) {
     if (pc == 0) {
 	return;
@@ -572,6 +612,7 @@ class Machine {
       case Inst.RUNE1:
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
+      case Inst.ALT_RUNE1:
 	  acc.add(pc);
 	  break;
     }

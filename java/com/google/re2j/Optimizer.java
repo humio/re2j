@@ -21,6 +21,7 @@ class Optimizer {
       for (int pc=0; pc<len; pc++) {
 	Inst inst = prog.inst[pc];
 	if (optNop(pc, inst, prog)) changes++;
+	if (optAltRune1(pc, inst, prog)) changes++;
       }
 
       if (isNopAt(prog.start, prog)) { // Eliminate NOP as first instruction.
@@ -72,6 +73,27 @@ class Optimizer {
     }
 
     return changed;
+  }
+
+  /** Replace ALT with ALT_RUNE1 under the right circumstances. */
+  private static boolean optAltRune1(int pc, Inst inst, Prog prog) {
+    if (inst.op == Inst.ALT &&
+	prog.inst[inst.out].op == Inst.RUNE1) {
+	Inst a = prog.inst[inst.out];
+	Inst b = prog.inst[inst.arg];
+	int rune1 = a.runes[0];
+	if (b.op == Inst.RUNE1) {
+	  int rune2 = prog.inst[inst.arg].runes[0];
+	  if (rune1 != rune2) {
+	    // Rewrite ALT(RUNE1(X), RUNE1(Y)) to ALT_RUNE1(X, RUNE1(Y)):
+	    inst.op = Inst.ALT_RUNE1;
+	    inst.runes = a.runes;
+	    inst.out = a.out;
+	    return true;
+	  }
+	}
+    }
+    return false;
   }
 
 }
