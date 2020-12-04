@@ -25,11 +25,15 @@ import java.util.concurrent.TimeUnit;
 public class BenchmarkSubMatch {
 
   @Param({"JDK", "RE2J"})
-  private Implementations impl;
+  private Implementations impl = Implementations.RE2J;
 
   private String html =
       new String(readFile("google-maps-contact-info.html"), StandardCharsets.UTF_8);
   private Implementations.Pattern pattern;
+
+  // public BenchmarkSubMatch(Implementations impl) {
+  //     this.impl = impl;
+  // }
 
   @Setup
   public void setup() {
@@ -42,6 +46,18 @@ public class BenchmarkSubMatch {
     int count = 0;
     while (matcher.find()) {
       bh.consume(matcher.group());
+      count++;
+    }
+    if (count != 1) {
+      throw new AssertionError("Expected to match one phone number.");
+    }
+  }
+
+  public void findPhoneNumbers() {
+    Implementations.Matcher matcher = pattern.matcher(html);
+    int count = 0;
+    while (matcher.find()) {
+      matcher.group();
       count++;
     }
     if (count != 1) {

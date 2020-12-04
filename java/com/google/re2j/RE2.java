@@ -187,6 +187,7 @@ class RE2 {
     int maxCap = re.maxCap(); // (may shrink during simplify)
     re = Simplify.simplify(re);
     Prog prog = Compiler.compileRegexp(re);
+    System.out.println("ERK: Prog for /"+expr+"/:\n  "+prog);
     RE2 re2 = new RE2(expr, prog, maxCap, longest);
     StringBuilder prefixBuilder = new StringBuilder();
     re2.prefixComplete = prog.prefix(prefixBuilder);

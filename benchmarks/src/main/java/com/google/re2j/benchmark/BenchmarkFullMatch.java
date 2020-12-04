@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class BenchmarkFullMatch {
 
   @Param({"JDK", "RE2J"})
-  private Implementations impl;
+  private Implementations impl = Implementations.RE2J;
 
   private Implementations.Pattern pattern;
 
@@ -42,6 +42,14 @@ public class BenchmarkFullMatch {
     bh.consume(matches);
   }
 
+  public void matched() {
+    Implementations.Matcher matcher = pattern.matcher("password");
+    boolean matches = matcher.matches();
+    if (!matches) {
+      throw new AssertionError();
+    }
+  }
+
   @Benchmark
   public void notMatched(Blackhole bh) {
     Implementations.Matcher matcher = pattern.matcher("l0ngpassword");
@@ -50,5 +58,13 @@ public class BenchmarkFullMatch {
       throw new AssertionError();
     }
     bh.consume(matches);
+  }
+
+  public void notMatched() {
+    Implementations.Matcher matcher = pattern.matcher("l0ngpassword");
+    boolean matches = matcher.matches();
+    if (matches) {
+      throw new AssertionError();
+    }
   }
 }
