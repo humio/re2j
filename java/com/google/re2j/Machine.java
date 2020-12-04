@@ -43,7 +43,7 @@ class Machine {
       this.denseThreads = new Thread[n];
     }
 
-      boolean contains(int pc, int tid) {
+    boolean contains(int pc, int tid) {
       int j = sparse[tid];
       return j < size && densePcs[j] == pc;
     }

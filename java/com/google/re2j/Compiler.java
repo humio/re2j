@@ -9,6 +9,8 @@
 
 package com.google.re2j;
 
+import java.util.HashSet;
+
 /**
  * Compiler from {@code Regexp} (RE2 abstract syntax) to {@code RE2} (compiled regular expression).
  *
@@ -50,7 +52,7 @@ class Compiler {
     Frag f = c.compile(re);
     c.prog.patch(f.out, c.newInst(Inst.MATCH).i);
     c.prog.start = f.i;
-    assignThreadIDsToInstructions(c.prog);
+    assignThreadIDsToInstructions2(c.prog);
     return c.prog;
   }
 
@@ -263,7 +265,8 @@ class Compiler {
     }
   }
 
-  private static void assignThreadIDsToInstructions(Prog prog) {
+  /** Simple version - instructions don't share TIDs. */
+  private static void assignThreadIDsToInstructions1(Prog prog) {
     int numInst = prog.numInst();
     int nextTid = 0;
     for (int i=0; i < numInst; i++) {
@@ -284,4 +287,102 @@ class Compiler {
     }
     prog.maxThreadNum = nextTid;
   }
+
+  /** Let instructions share TIDs in the following case:
+      - Instruction A has one precedessor, which is a RUNE1.
+      - Instruction B has one precedessor, which is a RUNE1.
+      - The runes of the predecessors are distinct.
+      - (Or: the predecessor is start-of-program)
+ */
+  private static void assignThreadIDsToInstructions2(Prog prog) {
+    final int numInst = prog.numInst();
+
+    // Step 1: Count the number of predecessors for each instruction.
+    final int[] predecessorCount = new int[numInst];
+    final int[] aPredecessor = new int[numInst];
+    predecessorCount[prog.start]++;
+    aPredecessor[prog.start] = -1;
+
+    for (int i=0; i < numInst; i++) {
+      Inst inst = prog.getInst(i);
+      switch (inst.op) {
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+	// Two successors.
+	predecessorCount[inst.out]++;
+	predecessorCount[inst.arg]++;
+	aPredecessor[inst.out] = i;
+	aPredecessor[inst.arg] = i;
+	break;
+
+      case Inst.FAIL:
+      case Inst.MATCH:
+	// No successors.
+	break;
+
+      default:
+	// One successor.
+	predecessorCount[inst.out]++;
+	aPredecessor[inst.out] = i;
+	break;
+      }
+    }
+
+    // Step 2: Assign thread IDs.
+    int nextTid = 0;
+    int reusableTid = -1;
+    HashSet<Integer> runesForLastTid = null;
+
+    System.out.println("==== Thread-ID assignments:");
+    for (int i=0; i < numInst; i++) {
+      Inst inst = prog.getInst(i);
+      int tid;
+      String note = "??";
+      switch (inst.op) {
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+      case Inst.FAIL:
+      case Inst.NOP:
+	// These are never scheduled.
+	tid = -1;
+	note = "-";
+	break;
+      default:
+	if (predecessorCount[i] > 1) {
+	  tid = nextTid++; // Can't share.
+	  note = "multiple predecessors";
+	} else {
+	  int predPC = aPredecessor[i];
+	  if (predPC == -1 || prog.inst[predPC].op == Inst.RUNE1) {
+	    int rune;
+	    if (predPC == -1) {
+	      // Start-of-program - can always share.
+	      rune = -1; // Non-conflicting value
+	    } else {
+	      rune = prog.inst[predPC].runes[0];
+	    }
+	    if (reusableTid >= 0 && !runesForLastTid.contains(rune)) {
+	      tid = reusableTid;
+	      runesForLastTid.add(rune);
+	      note = "reusing (rune="+rune+")";
+	    } else {
+	      tid = nextTid++; // Can't share with existing; perhaps with future instructions?
+	      note = "not reusing (rune="+rune+")";
+	      reusableTid = tid;
+	      runesForLastTid = new HashSet<Integer>();
+	      runesForLastTid.add(rune);
+	    }
+	  } else {
+	    // Not an instruction which can share.
+	    tid = nextTid++;
+	    note = "non-RUNE1 predecessor: pc="+predPC+" op="+prog.inst[predPC].op;
+	  }
+	}
+      }
+      inst.tid = tid;
+      System.out.println(i+"\t"+inst+"\t\t// TID="+tid+"  #preds="+predecessorCount[i]+"\tnote: "+note);
+    }
+    prog.maxThreadNum = nextTid;
+  }
+
 }
