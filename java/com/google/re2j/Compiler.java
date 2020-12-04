@@ -50,6 +50,7 @@ class Compiler {
     Frag f = c.compile(re);
     c.prog.patch(f.out, c.newInst(Inst.MATCH).i);
     c.prog.start = f.i;
+    Optimizer.optimize(c.prog);
     return c.prog;
   }
 
