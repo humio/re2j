@@ -119,8 +119,11 @@ class Machine {
   Machine(RE2 re2) {
     this.prog = re2.prog;
     this.re2 = re2;
-    this.q0 = new Queue(prog.numInst());
-    this.q1 = new Queue(prog.numInst());
+    int maxThreadNum = prog.maxThreadNum();
+    System.out.println("ERK| numInst="+prog.numInst()+" maxThreadNum="+maxThreadNum);
+
+    this.q0 = new Queue(maxThreadNum);
+    this.q1 = new Queue(maxThreadNum);
     this.matchcap = new int[prog.numCap < 2 ? 2 : prog.numCap];
 
     if (prog.addList == null) prog.addList = new int[prog.inst.length][];
@@ -451,10 +454,16 @@ class Machine {
     if (pc == 0) {
       return t;
     }
-    if (q.contains(pc, prog.inst[pc].tid)) {
-      return t;
+    int tid = prog.inst[pc].tid;
+    final int d;
+    if (tid != -1) {
+      if (q.contains(pc, tid)) {
+	return t;
+      }
+      d = q.add(pc, prog.inst[pc].tid);
+    } else {
+      d = -1; // Should not be scheduled.
     }
-    int d = q.add(pc, prog.inst[pc].tid);
     Inst inst = prog.inst[pc];
     switch (inst.op) {
       default:

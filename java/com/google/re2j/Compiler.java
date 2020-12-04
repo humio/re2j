@@ -282,5 +282,6 @@ class Compiler {
       }
       inst.tid = tid;
     }
+    prog.maxThreadNum = nextTid;
   }
 }

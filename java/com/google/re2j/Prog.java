@@ -23,6 +23,7 @@ final class Prog {
   // 2 => implicit ( and ) for whole match $0
 
   int[][] addList = null;
+  int maxThreadNum = -1;
     
   // Constructs an empty program.
   Prog() {}
@@ -36,6 +37,11 @@ final class Prog {
   // Returns the number of instructions in this program.
   int numInst() {
     return instSize;
+  }
+
+  // Returns the maximum number of threads necessary to run this program.
+  int maxThreadNum() {
+    return maxThreadNum;
   }
 
   // Adds a new instruction to this program, with operator |op| and |pc| equal
