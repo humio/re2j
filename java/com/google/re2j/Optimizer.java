@@ -22,6 +22,7 @@ class Optimizer {
 	Inst inst = prog.inst[pc];
 	if (optNop(pc, inst, prog)) changes++;
 	if (optAltRune1(pc, inst, prog)) changes++;
+	if (optRestructure(pc, inst, prog)) changes++;
       }
 
       if (isNopAt(prog.start, prog)) { // Eliminate NOP as first instruction.
@@ -82,18 +83,72 @@ class Optimizer {
 	Inst a = prog.inst[inst.out];
 	Inst b = prog.inst[inst.arg];
 	int rune1 = a.runes[0];
-	if (b.op == Inst.RUNE1) {
-	  int rune2 = prog.inst[inst.arg].runes[0];
-	  if (rune1 != rune2) {
-	    // Rewrite ALT(RUNE1(X), RUNE1(Y)) to ALT_RUNE1(X, RUNE1(Y)):
-	    inst.op = Inst.ALT_RUNE1;
-	    inst.runes = a.runes;
-	    inst.out = a.out;
-	    return true;
-	  }
+	if (canBeSecondBranchOfAltRune1(b, prog, a)) {
+	  // Rewrite ALT(RUNE1(R), Y) to ALT_RUNE1(R, Y):
+	  inst.op = Inst.ALT_RUNE1;
+	  inst.runes = a.runes;
+	  inst.out = a.out;
+	  return true;
 	}
     }
     return false;
+  }
+
+  /** Restructure in order to enable other optimizations:
+   *  ALT(ALT_RUNE1(r, X), Y) -> ALT_RUNE1(r, ALT(X, Y))
+   */
+  private static boolean optRestructure(int pc, Inst inst, Prog prog) {
+    if (inst.op == Inst.ALT &&
+	prog.inst[inst.out].op == Inst.ALT_RUNE1) {
+	int label1 = inst.out;
+	int label2 = inst.arg;
+	Inst oldAltRune = prog.inst[inst.out];
+
+	int newAltLabel = newInst(Inst.ALT, prog);
+	Inst newAlt = prog.inst[newAltLabel];
+	newAlt.out = oldAltRune.out;
+	newAlt.arg = inst.arg;
+
+	inst.op = oldAltRune.op;
+	inst.runes = oldAltRune.runes;
+	inst.out = oldAltRune.out;
+	inst.arg = newAltLabel;
+    }
+    return false;
+  }
+
+  private static boolean canBeSecondBranchOfAltRune1(Inst inst, Prog prog, Inst runeInstToNotOverlap) {
+    // Only RUNE1 is supported in the first branch at present:
+    if (runeInstToNotOverlap.op != Inst.RUNE1) return false;
+    int rune = runeInstToNotOverlap.runes[0];
+
+    while (true) {
+      switch (inst.op) {
+      case Inst.ALT_RUNE1:
+	inst = prog.inst[inst.arg];
+	break;
+
+      case Inst.RUNE:
+	return !inst.matchRune(rune);
+
+      case Inst.RUNE1:
+	return rune != inst.runes[0];
+
+      case Inst.RUNE_ANY:
+	return false;
+
+      case Inst.RUNE_ANY_NOT_NL:
+	return rune == '\n';
+
+      default:
+	return false;
+      }
+    }
+  }
+
+  private static int newInst(int op, Prog prog) {
+    prog.addInst(op);
+    return prog.numInst() - 1;
   }
 
 }
