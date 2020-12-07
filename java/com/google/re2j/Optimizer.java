@@ -212,7 +212,7 @@ class Optimizer {
 	return true;
 
       case Inst.RUNE1:
-	return runeInstToNotOverlap.matchRune(inst.theRune);
+	return !runeInstToNotOverlap.matchRune(inst.theRune);
 
       case Inst.RUNE_ANY:
 	return false;
