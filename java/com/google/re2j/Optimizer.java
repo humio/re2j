@@ -142,9 +142,11 @@ class Optimizer {
       case Inst.RUNE_ANY_NOT_NL:
 	return rune == '\n';
 
-      case Inst.CAPTURE:
-      case Inst.EMPTY_WIDTH:
-	inst = prog.inst[inst.out];
+      // Enable these when we know how to handle them in the Machine:
+      // case Inst.CAPTURE:
+      // case Inst.EMPTY_WIDTH:
+      // 	inst = prog.inst[inst.out];
+      // 	break;
 	break;
 
       default:
