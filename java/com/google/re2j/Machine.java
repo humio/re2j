@@ -366,11 +366,21 @@ class Machine {
           break;
 
         case Inst.ALT_RUNE1:
+        case Inst.ALT_RUNE:
 	    boolean done = false;
 	    while (!done) {
 		switch (i.op) {
 		case Inst.ALT_RUNE1:
 		    add = c == i.theRune;
+		    if (add) {
+			done = true;
+		    } else {
+			i = prog.inst[i.arg];
+		    }
+		    break;
+
+		case Inst.ALT_RUNE:
+		    add = i.matchRune(c);
 		    if (add) {
 			done = true;
 		    } else {
@@ -398,13 +408,13 @@ class Machine {
 		    done = true;
 		    break;
 	    default:
-		throw new IllegalStateException("bad inst");
+		throw new IllegalStateException("bad inst: "+i.op);
 		}
 	    }
 	    break;
 
         default:
-          throw new IllegalStateException("bad inst");
+          throw new IllegalStateException("bad inst: "+i.op);
       }
       if (add) {
 	  t = add(nextq, i.out, nextPos, t.cap/*, nextCond*/, t);
@@ -474,6 +484,7 @@ class Machine {
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
       case Inst.ALT_RUNE1:
+      case Inst.ALT_RUNE:
         if (t == null) {
           t = alloc(inst);
         } else {
@@ -548,6 +559,7 @@ class Machine {
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
       case Inst.ALT_RUNE1:
+      case Inst.ALT_RUNE:
         if (t == null) {
           t = alloc(inst);
         } else {
@@ -613,6 +625,7 @@ class Machine {
       case Inst.RUNE_ANY:
       case Inst.RUNE_ANY_NOT_NL:
       case Inst.ALT_RUNE1:
+      case Inst.ALT_RUNE:
 	  acc.add(pc);
 	  break;
     }
