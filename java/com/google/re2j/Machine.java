@@ -407,6 +407,14 @@ class Machine {
 		    add = c != '\n';
 		    done = true;
 		    break;
+
+		case Inst.CAPTURE:
+		  if (i.arg < ncap) {
+		    t.cap[i.arg] = pos;
+		  }
+		  i = prog.inst[i.out];
+		  break;
+
 	    default:
 		throw new IllegalStateException("bad inst: "+i.op);
 		}

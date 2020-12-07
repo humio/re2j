@@ -183,10 +183,10 @@ class Optimizer {
 	return rune == '\n';
 
       // Enable these when we know how to handle them in the Machine:
-      // case Inst.CAPTURE:
+      case Inst.CAPTURE:
       // case Inst.EMPTY_WIDTH:
-      // 	inst = prog.inst[inst.out];
-      // 	break;
+      	inst = prog.inst[inst.out];
+      	break;
 
       default:
 	return false;
@@ -221,10 +221,10 @@ class Optimizer {
 	return false;
 
       // Enable these when we know how to handle them in the Machine:
-      // case Inst.CAPTURE:
+      case Inst.CAPTURE:
       // case Inst.EMPTY_WIDTH:
-      // 	inst = prog.inst[inst.out];
-      // 	break;
+      	inst = prog.inst[inst.out];
+      	break;
 
       default:
 	return false;
