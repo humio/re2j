@@ -142,8 +142,11 @@ class Optimizer {
       case Inst.RUNE_ANY_NOT_NL:
 	return rune == '\n';
 
-	//TODO: Handle CAPTURE
-	//TODO: Handle EMPTY_WIDTH
+      case Inst.CAPTURE:
+      case Inst.EMPTY_WIDTH:
+	inst = prog.inst[inst.out];
+	break;
+
       default:
 	return false;
       }
