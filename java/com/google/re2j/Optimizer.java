@@ -82,7 +82,6 @@ class Optimizer {
 	prog.inst[inst.out].op == Inst.RUNE1) {
 	Inst a = prog.inst[inst.out];
 	Inst b = prog.inst[inst.arg];
-	int rune1 = a.theRune;
 	if (canBeSecondBranchOfAltRune1(b, prog, a)) {
 	  // Rewrite ALT(RUNE1(R), Y) to ALT_RUNE1(R, Y):
 	  inst.op = Inst.ALT_RUNE1;
@@ -112,6 +111,7 @@ class Optimizer {
 
 	inst.op = oldAltRune.op;
 	inst.runes = oldAltRune.runes;
+	inst.theRune = oldAltRune.theRune;
 	inst.out = oldAltRune.out;
 	inst.arg = newAltLabel;
     }
