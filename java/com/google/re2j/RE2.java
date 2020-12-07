@@ -115,6 +115,10 @@ class RE2 {
   boolean prefixComplete; // true iff prefix is the entire regexp
   int prefixRune; // first rune in prefix
 
+  public static boolean verboseCompiler = false;
+  public static boolean verboseOptimizer = false;
+  public static boolean verboseRuntime = false;
+
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
   // @GuardedBy("this")
@@ -186,8 +190,9 @@ class RE2 {
     Regexp re = Parser.parse(expr, mode);
     int maxCap = re.maxCap(); // (may shrink during simplify)
     re = Simplify.simplify(re);
+    if (verboseCompiler) System.err.println("ERK: Compiling /"+expr+"/...");
     Prog prog = Compiler.compileRegexp(re);
-    System.out.println("ERK: Prog for /"+expr+"/:\n  "+prog);
+    //System.out.println("ERK: Prog for /"+expr+"/:\n  "+prog);
     RE2 re2 = new RE2(expr, prog, maxCap, longest);
     StringBuilder prefixBuilder = new StringBuilder();
     re2.prefixComplete = prog.prefix(prefixBuilder);

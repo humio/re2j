@@ -52,7 +52,9 @@ class Compiler {
     Frag f = c.compile(re);
     c.prog.patch(f.out, c.newInst(Inst.MATCH).i);
     c.prog.start = f.i;
+    if (RE2.verboseOptimizer) System.err.println("ERK: Prog before optimization:\n  "+c.prog);
     Optimizer.optimize(c.prog);
+    if (RE2.verboseOptimizer || RE2.verboseCompiler) System.err.println("ERK: Prog after optimization:\n  "+c.prog);
     assignThreadIDsToInstructions2(c.prog);
     return c.prog;
   }
@@ -334,7 +336,7 @@ class Compiler {
     int reusableTid = -1;
     HashSet<Integer> runesForLastTid = null;
 
-    System.out.println("==== Thread-ID assignments:");
+    //System.out.println("==== Thread-ID assignments:");
     for (int i=0; i < numInst; i++) {
       Inst inst = prog.getInst(i);
       int tid;
@@ -375,7 +377,7 @@ class Compiler {
 	}
       }
       inst.tid = tid;
-      System.out.println(i+"\t"+inst+"\t\t// TID="+tid+"  #preds="+predecessorCount[i]+"\tnote: "+note);
+      //System.out.println(i+"\t"+inst+"\t\t// TID="+tid+"  #preds="+predecessorCount[i]+"\tnote: "+note);
     }
     prog.maxThreadNum = nextTid;
   }

@@ -29,7 +29,7 @@ class Optimizer {
 	prog.start = prog.inst[prog.start].out; // Skip the NOP.
 	changes++;
       }
-      System.out.println("DBG| Optimizer round #"+round+": "+changes+" changes");
+      if (RE2.verboseOptimizer) System.err.println("DBG| Optimizer round #"+round+": "+changes+" changes");
     } while (changes > 0);
   }
 

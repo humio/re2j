@@ -120,7 +120,7 @@ class Machine {
     this.prog = re2.prog;
     this.re2 = re2;
     int maxThreadNum = prog.maxThreadNum();
-    System.out.println("ERK| numInst="+prog.numInst()+" maxThreadNum="+maxThreadNum);
+    //System.out.println("ERK| numInst="+prog.numInst()+" maxThreadNum="+maxThreadNum);
 
     this.q0 = new Queue(maxThreadNum);
     this.q1 = new Queue(maxThreadNum);
