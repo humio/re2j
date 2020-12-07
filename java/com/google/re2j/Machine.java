@@ -370,7 +370,7 @@ class Machine {
 	    while (!done) {
 		switch (i.op) {
 		case Inst.ALT_RUNE1:
-		    add = i.matchRune(c);
+		    add = c == i.theRune;
 		    if (add) {
 			done = true;
 		    } else {
