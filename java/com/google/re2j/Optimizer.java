@@ -82,7 +82,7 @@ class Optimizer {
 	prog.inst[inst.out].op == Inst.RUNE1) {
 	Inst a = prog.inst[inst.out];
 	Inst b = prog.inst[inst.arg];
-	int rune1 = a.theRune;//runes[0];
+	int rune1 = a.theRune;
 	if (canBeSecondBranchOfAltRune1(b, prog, a)) {
 	  // Rewrite ALT(RUNE1(R), Y) to ALT_RUNE1(R, Y):
 	  inst.op = Inst.ALT_RUNE1;
@@ -121,11 +121,12 @@ class Optimizer {
   private static boolean canBeSecondBranchOfAltRune1(Inst inst, Prog prog, Inst runeInstToNotOverlap) {
     // Only RUNE1 is supported in the first branch at present:
     if (runeInstToNotOverlap.op != Inst.RUNE1) return false;
-    int rune = runeInstToNotOverlap.runes[0];
+    int rune = runeInstToNotOverlap.theRune;
 
     while (true) {
       switch (inst.op) {
       case Inst.ALT_RUNE1:
+	if (rune == inst.theRune) return false;
 	inst = prog.inst[inst.arg];
 	break;
 
@@ -133,7 +134,7 @@ class Optimizer {
 	return !inst.matchRune(rune);
 
       case Inst.RUNE1:
-	return rune != inst.runes[0];
+	return rune != inst.theRune;
 
       case Inst.RUNE_ANY:
 	return false;
@@ -141,6 +142,8 @@ class Optimizer {
       case Inst.RUNE_ANY_NOT_NL:
 	return rune == '\n';
 
+	//TODO: Handle CAPTURE
+	//TODO: Handle EMPTY_WIDTH
       default:
 	return false;
       }
