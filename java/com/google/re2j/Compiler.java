@@ -178,6 +178,7 @@ class Compiler {
     if (((flags & RE2.FOLD_CASE) == 0 && runes.length == 1)
         || (runes.length == 2 && runes[0] == runes[1])) {
       i.op = Inst.RUNE1;
+      i.theRune = (char)runes[0];
     } else if (runes.length == 2 && runes[0] == 0 && runes[1] == Unicode.MAX_RUNE) {
       i.op = Inst.RUNE_ANY;
     } else if (runes.length == 4

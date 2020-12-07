@@ -33,6 +33,7 @@ final class Inst {
   int tid; // Thread ID - shared between instructions when safe, to reduce thread table size.
   int out; // all but MATCH, FAIL
   int arg; // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH
+  char theRune;
   int[] runes; // length==1 => exact match
   // otherwise a list of [lo,hi] pairs.  hi is *inclusive*.
   // REVIEWERS: why not half-open intervals?
