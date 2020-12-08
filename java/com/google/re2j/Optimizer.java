@@ -196,7 +196,8 @@ class Optimizer {
 
   /** Replace ALT(A:RUNE1(a) -> X, B:RUNEx -> Y) with
    *  RUNE1 -> ALT(X,Y) if B=RUNE1(a)
-   *  ALT_RUNE1(a, ALT(X,Y); B) otherwise
+   *  //ALT_RUNE1(a, ALT(X,Y); B) otherwise
+   *  ALT_RUNE1(a, X; B) if alwaysLeadsToMatch(X)
    */
   private static boolean optAltRune1Overlapping(int pc, Inst inst, Prog prog) {
     if (inst.op == Inst.ALT &&
@@ -215,7 +216,16 @@ class Optimizer {
 	  inst.theRune = a.theRune;
 	  inst.runes = a.runes;
 	  inst.out = newAltLabel;
-	} else {
+	  return true;
+	} else if (alwaysLeadsToMatch(a.out, prog)) {
+	  inst.op = Inst.ALT_RUNE1;
+	  inst.theRune = a.theRune;
+	  inst.runes = a.runes;
+	  inst.out = a.out;
+	  inst.arg = bLabel;
+	  return true;
+	}
+/*	} else {
 	  int newAltLabel = newInst(Inst.ALT, prog);
 	  Inst newAlt = prog.inst[newAltLabel];
 	  newAlt.out = a.out;
@@ -227,7 +237,7 @@ class Optimizer {
 	  inst.out = newAltLabel;
 	  inst.arg = bLabel;
 	}
-	return true;
+*/
       }
     }
     return false;
