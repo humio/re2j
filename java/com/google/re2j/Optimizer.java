@@ -294,12 +294,12 @@ class Optimizer {
 	return true;
       } else if (instA.op == Inst.RUNE_ANY_NOT_NL && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
 	inst.op = Inst.ALT_RUNE;
-	inst.runes = new int[] {0, '\n'-1, '\n'+1, Character.MAX_VALUE};
+	inst.runes = new int[] {0, '\n'-1, '\n'+1, 0x10ffff};
 	inst.out = pc;
 	return true;
       } else if (instA.op == Inst.RUNE_ANY && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
 	inst.op = Inst.ALT_RUNE;
-	inst.runes = new int[] {0, Character.MAX_VALUE};
+	inst.runes = new int[] {0, 0x10ffff};
 	inst.out = pc;
 	return true;
       }
