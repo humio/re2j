@@ -26,7 +26,7 @@ class Optimizer {
 	if (optAltRune(pc, inst, prog)) changes++;
 	if (optAltRune1Overlapping(pc, inst, prog)) changes++;
 	if (optRestructure(pc, inst, prog)) changes++;
-	if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
+	//if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
 
       if (isNopAt(prog.start, prog)) { // Eliminate NOP as first instruction.
