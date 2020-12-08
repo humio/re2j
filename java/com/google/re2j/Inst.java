@@ -38,6 +38,7 @@ final class Inst {
   int[] runes; // length==1 => exact match
   // otherwise a list of [lo,hi] pairs.  hi is *inclusive*.
   // REVIEWERS: why not half-open intervals?
+  int arg2; // CAPTURE(offset)
 
   Inst(int op) {
     this.op = op;
@@ -102,7 +103,7 @@ final class Inst {
       case ALT_MATCH:
         return "altmatch -> " + out + ", " + arg;
       case CAPTURE:
-        return "cap " + arg + " -> " + out;
+	return "cap " + arg + "," + (-arg2) + " -> " + out;
       case EMPTY_WIDTH:
         return "empty " + arg + " -> " + out;
       case MATCH:

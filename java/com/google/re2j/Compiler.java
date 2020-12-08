@@ -82,6 +82,7 @@ class Compiler {
     Frag f = newInst(Inst.CAPTURE);
     f.out = f.i << 1;
     prog.getInst(f.i).arg = arg;
+    prog.getInst(f.i).arg2 = 0;
     if (prog.numCap < arg + 1) {
       prog.numCap = arg + 1;
     }

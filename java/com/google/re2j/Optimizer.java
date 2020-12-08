@@ -21,6 +21,7 @@ class Optimizer {
       for (int pc=0; pc<len; pc++) {
 	Inst inst = prog.inst[pc];
 	if (optNop(pc, inst, prog)) changes++;
+	if (optDelayCapture(pc, inst, prog)) changes++;
 	if (optAltRune1(pc, inst, prog)) changes++;
 	if (optAltRune(pc, inst, prog)) changes++;
 	if (optRestructure(pc, inst, prog)) changes++;
@@ -78,6 +79,53 @@ class Optimizer {
     }
 
     return changed;
+  }
+
+  private static boolean optDelayCapture(int pc, Inst inst, Prog prog) {
+    if (inst.op != Inst.CAPTURE) return false;
+    int nextLabel = inst.out;
+    Inst next = prog.inst[nextLabel];
+    switch (next.op) {
+    case Inst.RUNE:
+    case Inst.RUNE1:
+    case Inst.RUNE_ANY:
+    case Inst.RUNE_ANY_NOT_NL: {
+      // Rewrite CAPTURE(offset)->RUNEx to RUNEx->CAPTURE(offset+1)
+      // Because: tests before book-keeping.
+      int newLabel = newInst(Inst.CAPTURE, prog);
+      Inst newInst = prog.inst[newLabel];
+      newInst.op = inst.op;
+      newInst.arg = inst.arg;
+      newInst.arg2 = inst.arg2 + 1;
+      newInst.out = next.out;
+
+      inst.op = next.op;
+      inst.out = newLabel;
+      inst.arg = next.arg;
+      inst.theRune = next.theRune;
+      inst.runes = next.runes;
+      return true;
+    }
+
+    case Inst.EMPTY_WIDTH: {
+      // Rewrite CAPTURE(offset)->EMPTY_WIDTH to EMPTY_WIDTH->CAPTURE(offset)
+      // Because: tests before book-keeping.
+      int newLabel = newInst(Inst.CAPTURE, prog);
+      Inst newInst = prog.inst[newLabel];
+      newInst.op = inst.op;
+      newInst.arg = inst.arg;
+      newInst.arg2 = inst.arg2;
+      newInst.out = next.out;
+
+      inst.op = next.op;
+      inst.out = newLabel;
+      inst.arg = next.arg;
+      return true;
+    }
+
+    default:
+      return false;
+    }
   }
 
   /** Replace ALT with ALT_RUNE1 under the right circumstances. */
@@ -240,7 +288,7 @@ class Optimizer {
     for (int i=0; i<b.runes.length; i++) if (a.matchRune(b.runes[i])) return true;
     return false;
   }
-  
+
   private static int newInst(int op, Prog prog) {
     prog.addInst(op);
     return prog.numInst() - 1;

@@ -410,7 +410,7 @@ class Machine {
 
 		case Inst.CAPTURE:
 		  if (i.arg < ncap) {
-		    t.cap[i.arg] = pos;
+		    t.cap[i.arg] = pos - i.arg2;
 		  }
 		  i = prog.inst[i.out];
 		  break;
@@ -478,7 +478,7 @@ class Machine {
       case Inst.CAPTURE:
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
-          cap[inst.arg] = pos;
+          cap[inst.arg] = pos - inst.arg2;
           add0(q, inst.out, pos, cap/*, cond*/, null);
           cap[inst.arg] = opos;
         } else {
@@ -553,7 +553,7 @@ class Machine {
       case Inst.CAPTURE:
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
-          cap[inst.arg] = pos;
+          cap[inst.arg] = pos - inst.arg2;
           add(q, inst.out, pos, cap/*, cond*/, null);
           cap[inst.arg] = opos;
         } else {
