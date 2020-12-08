@@ -25,7 +25,7 @@ class Optimizer {
 	if (optAltRune1(pc, inst, prog)) changes++;
 	if (optAltRune(pc, inst, prog)) changes++;
 	if (optAltRune1Overlapping(pc, inst, prog)) changes++;
-	if (optRestructure(pc, inst, prog)) changes++;
+	// if (optRestructure(pc, inst, prog)) changes++;
 	//if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
 
@@ -263,6 +263,7 @@ class Optimizer {
 	inst.theRune = oldAltRune.theRune;
 	inst.out = oldAltRune.out;
 	inst.arg = newAltLabel;
+	return true;
     }
 
     if (inst.op == Inst.ALT &&
@@ -280,6 +281,7 @@ class Optimizer {
 	inst.runes = oldAltRune.runes;
 	inst.out = oldAltRune.out;
 	inst.arg = newAltLabel;
+	return true;
     }
     return false;
   }
