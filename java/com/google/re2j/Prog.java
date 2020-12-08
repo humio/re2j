@@ -10,6 +10,7 @@
 package com.google.re2j;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 
 /**
  * A Prog is a compiled regular expression program.
@@ -24,7 +25,7 @@ final class Prog {
 
   int[][] addList = null;
   int maxThreadNum = -1;
-    
+
   // Constructs an empty program.
   Prog() {}
 
@@ -184,4 +185,123 @@ final class Prog {
     }
     return out.toString();
   }
+
+  /** Remove all unreachable instructions, and reorder - visiting depth-first. */
+  public void compact() {
+    // Phase 1: Visit the program, determining new positions.
+    int[] outNewInstSize = new int[1];
+    int[] labelMapping = computeCompaction(outNewInstSize);
+    int newInstSize = outNewInstSize[0];
+
+    /*
+    System.err.println("== Compact: labelMapping:");
+    for (int pc = 0; pc < instSize; ++pc) {
+      char c = (pc == start) ? '*' : ' ';
+      System.err.println("" + c + pc +" ~> " + labelMapping[pc] + "\t"+inst[pc]);
+    }
+    System.err.println("DBG New instSize: " + newInstSize);
+    */
+
+    // Phase 2: Compact the program.
+    applyCompaction(labelMapping, newInstSize);
+  }
+
+  private int[] computeCompaction(int[] outNewInstSize) {
+    int[] labelMapping = new int[inst.length];
+    int nextLabel = 0;
+    Arrays.fill(labelMapping, -1);
+    ArrayList<Integer> stack = new ArrayList<Integer>();
+    push(stack, this.start);
+    push(stack, 0); // Let 'FAIL' retain its position as instruction #0.
+
+    int pc;
+    while ((pc = pop(stack)) >= 0) {
+      //System.err.println("DBG| Compact: visiting "+pc+": "+this.inst[pc]+"\t// |stack|="+stack.size());
+      if (labelMapping[pc] >= 0) continue; // Already assigned.
+      labelMapping[pc] = nextLabel++;
+
+      Inst i = this.inst[pc];
+      switch (i.op) {
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+      case Inst.ALT_RUNE1:
+      case Inst.ALT_RUNE:
+	// Two successors.
+	push(stack, i.arg); // The last to visit
+	push(stack, i.out); // The first to visit
+	break;
+
+      default:
+	// One successor.
+	push(stack, i.out);
+	break;
+
+      case Inst.FAIL:
+      case Inst.MATCH:
+	// No successors.
+	break;
+
+      case Inst.NOP:
+	// To ensure that nop-nop loops don't hinder termination, we don't do anything in this case.
+	break;
+      }
+    }
+
+    outNewInstSize[0] = nextLabel;
+    return labelMapping;
+  }
+
+  private void push(ArrayList<Integer> stack, int value) {
+    stack.add(value);
+  }
+  private int pop(ArrayList<Integer> stack) {
+    int sz = stack.size();
+    if (sz > 0) {
+      int res = stack.remove(sz-1);
+      return res;
+    } else {
+      return -1;
+    }
+  }
+
+  private void applyCompaction(int[] labelMapping, int newInstSize) {
+    // 1. Copy included instructions:
+    Inst[] newInst = new Inst[newInstSize];
+    for (int pc=0; pc<instSize; pc++) {
+      int newPc = labelMapping[pc];
+      if (newPc >= 0) newInst[newPc] = this.inst[pc];
+    }
+
+    // Replace old instruction list:
+    this.inst = newInst;
+    this.instSize = newInstSize;
+
+    // Patch up:
+    this.start = labelMapping[this.start];
+
+    for (int pc=0; pc<instSize; pc++) {
+      Inst i = this.inst[pc];
+      switch (i.op) {
+      case Inst.ALT:
+      case Inst.ALT_MATCH:
+      case Inst.ALT_RUNE1:
+      case Inst.ALT_RUNE:
+	// Two successors.
+	i.arg = labelMapping[i.arg];
+	// Fall-through
+
+      default:
+	// One successor.
+	i.out = labelMapping[i.out];
+	break;
+
+      case Inst.FAIL:
+      case Inst.MATCH:
+	// No successors.
+	break;
+      }
+    }
+
+  }
+
 }

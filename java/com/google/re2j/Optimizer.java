@@ -32,6 +32,7 @@ class Optimizer {
       }
       if (RE2.verboseOptimizer) System.err.println("DBG| Optimizer round #"+round+": "+changes+" changes");
     } while (changes > 0);
+    prog.compact();
   }
 
   private static boolean isNopAt(int pc, Prog prog) {
