@@ -25,6 +25,7 @@ class Optimizer {
 	if (optAltRune1(pc, inst, prog)) changes++;
 	if (optAltRune(pc, inst, prog)) changes++;
 	if (optRestructure(pc, inst, prog)) changes++;
+	if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
 
       if (isNopAt(prog.start, prog)) { // Eliminate NOP as first instruction.
@@ -34,6 +35,35 @@ class Optimizer {
       if (RE2.verboseOptimizer) System.err.println("DBG| Optimizer round #"+round+": "+changes+" changes");
     } while (changes > 0);
     prog.compact();
+
+    /*
+    {
+      int len = prog.numInst();
+      for (int pc=0; pc<len; pc++) {
+	Inst inst = prog.inst[pc];
+	if (inst.op == Inst.ALT) {
+	  if (alwaysLeadsToMatch(inst.out, prog)) System.err.println("DBG| Alt-A alwaysLeadsToMatch: "+pc+" "+inst);
+	  if (alwaysLeadsToMatch(inst.arg, prog)) System.err.println("DBG| Alt-B alwaysLeadsToMatch: "+pc+" "+inst);
+	}
+      }
+    }
+    */
+  }
+
+  private static boolean alwaysLeadsToMatch(int pc, Prog prog) {
+    while (true) {
+	Inst inst = prog.inst[pc];
+	switch (inst.op) {
+	case Inst.MATCH:
+	  return true;
+	case Inst.CAPTURE:
+	case Inst.NOP:
+	  pc = inst.out;
+	  continue;
+	default:
+	  return false;
+	}
+    }
   }
 
   private static boolean isNopAt(int pc, Prog prog) {
@@ -200,6 +230,39 @@ class Optimizer {
 	inst.runes = oldAltRune.runes;
 	inst.out = oldAltRune.out;
 	inst.arg = newAltLabel;
+    }
+    return false;
+  }
+
+  /** Detect trailing single-rune loops:
+   * Replace loop:ALT(RUNEx->loop, ...->Match) with
+   * loop:ALT_RUNEx(loop, ...->Match).
+   */
+  private static boolean optTrailingSingleRuneLoop(int pc, Inst inst, Prog prog) {
+    if (inst.op == Inst.ALT) {
+      Inst instA = prog.inst[inst.out];
+      if (instA.op == Inst.RUNE1 && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
+	inst.op = Inst.ALT_RUNE1;
+	inst.theRune = instA.theRune;
+	inst.runes = instA.runes;
+	inst.out = pc;
+	return true;
+      } else if (instA.op == Inst.RUNE && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
+	inst.op = Inst.ALT_RUNE;
+	inst.runes = instA.runes;
+	inst.out = pc;
+	return true;
+      } else if (instA.op == Inst.RUNE_ANY_NOT_NL && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
+	inst.op = Inst.ALT_RUNE;
+	inst.runes = new int[] {0, '\n'-1, '\n'+1, Character.MAX_VALUE};
+	inst.out = pc;
+	return true;
+      } else if (instA.op == Inst.RUNE_ANY && instA.out == pc && alwaysLeadsToMatch(inst.arg, prog)) {
+	inst.op = Inst.ALT_RUNE;
+	inst.runes = new int[] {0, Character.MAX_VALUE};
+	inst.out = pc;
+	return true;
+      }
     }
     return false;
   }

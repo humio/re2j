@@ -415,6 +415,23 @@ class Machine {
 		  i = prog.inst[i.out];
 		  break;
 
+		case Inst.MATCH:
+		  done = true;
+		  if (anchor == RE2.ANCHOR_BOTH && !atEnd) {
+		    // Don't match if we anchor at both start and end and those
+		    // expectations aren't met.
+		    break;
+		  }
+		  if (ncap > 0 && (!longest || !matched || matchcap[1] < pos)) {
+		    t.cap[1] = pos;
+		    System.arraycopy(t.cap, 0, matchcap, 0, ncap);
+		  }
+		  if (!longest) {
+		    free(runq, j + 1);
+		  }
+		  matched = true;
+		  break;
+
 	    default:
 		throw new IllegalStateException("bad inst: "+i.op);
 		}
