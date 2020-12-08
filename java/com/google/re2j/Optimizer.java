@@ -49,6 +49,8 @@ class Optimizer {
     switch (inst.op) {
     case Inst.ALT:
     case Inst.ALT_MATCH:
+    case Inst.ALT_RUNE1:
+    case Inst.ALT_RUNE:
       // Two successors.
       if (isNopAt(inst.arg, prog)) {
 	inst.arg = succOf(inst.arg, prog);
