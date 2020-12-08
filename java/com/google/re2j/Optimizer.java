@@ -24,6 +24,7 @@ class Optimizer {
 	if (optDelayCapture(pc, inst, prog)) changes++;
 	if (optAltRune1(pc, inst, prog)) changes++;
 	if (optAltRune(pc, inst, prog)) changes++;
+	if (optAltRune1Overlapping(pc, inst, prog)) changes++;
 	if (optRestructure(pc, inst, prog)) changes++;
 	if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
@@ -193,6 +194,45 @@ class Optimizer {
     return false;
   }
 
+  /** Replace ALT(A:RUNE1(a) -> X, B:RUNEx -> Y) with
+   *  RUNE1 -> ALT(X,Y) if B=RUNE1(a)
+   *  ALT_RUNE1(a, ALT(X,Y); B) otherwise
+   */
+  private static boolean optAltRune1Overlapping(int pc, Inst inst, Prog prog) {
+    if (inst.op == Inst.ALT &&
+	prog.inst[inst.out].op == Inst.RUNE1) {
+      int bLabel = inst.arg;
+      Inst a = prog.inst[inst.out];
+      Inst b = prog.inst[bLabel];
+      if (isRuneInstruction(b) && runesOverlap(a, b)) {
+	if (b.op == Inst.RUNE1) {
+	  int newAltLabel = newInst(Inst.ALT, prog);
+	  Inst newAlt = prog.inst[newAltLabel];
+	  newAlt.out = a.out;
+	  newAlt.arg = b.out;
+
+	  inst.op = Inst.RUNE1;
+	  inst.theRune = a.theRune;
+	  inst.runes = a.runes;
+	  inst.out = newAltLabel;
+	} else {
+	  int newAltLabel = newInst(Inst.ALT, prog);
+	  Inst newAlt = prog.inst[newAltLabel];
+	  newAlt.out = a.out;
+	  newAlt.arg = b.out;
+
+	  inst.op = Inst.ALT_RUNE1;
+	  inst.theRune = a.theRune;
+	  inst.runes = a.runes;
+	  inst.out = newAltLabel;
+	  inst.arg = bLabel;
+	}
+	return true;
+      }
+    }
+    return false;
+  }
+
   /** Restructure in order to enable other optimizations:
    *  ALT(ALT_RUNE1(r, X), Y) -> ALT_RUNE1(r, ALT(X, Y))
    */
@@ -343,6 +383,18 @@ class Optimizer {
       default:
 	return false;
       }
+    }
+  }
+
+  private static boolean isRuneInstruction(Inst inst) {
+    switch (inst.op) {
+      case Inst.RUNE:
+      case Inst.RUNE1:
+      case Inst.RUNE_ANY:
+      case Inst.RUNE_ANY_NOT_NL:
+	return true;
+    default:
+      return false;
     }
   }
 
