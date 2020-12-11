@@ -4,7 +4,7 @@ plugins {
   id 'wrapper'
   id 'com.jfrog.bintray' version '1.8.1'
   id 'maven-publish'
-  id 'com.github.sherter.google-java-format' version '0.3.2'
+  //id 'com.github.sherter.google-java-format' version '0.3.2'
   id 'net.ltgt.errorprone' version '0.0.11'
   id 'idea'
 
@@ -172,6 +172,7 @@ bintray {
   publications = ['mavenJava']
 }
 
+/*
 // If Java formatter checks fail, tell the user how to fix them.
 task printFormatHelperMessage {
   doLast {
@@ -181,7 +182,9 @@ task printFormatHelperMessage {
 }
 verifyGoogleJavaFormat.finalizedBy printFormatHelperMessage
 printFormatHelperMessage.onlyIf { verifyGoogleJavaFormat.state.failure != null }
+*/
 
+/*
 import com.hierynomus.gradle.license.tasks.LicenseCheck
 
 // By default, this plugin only applies to the root project. We apply it here
@@ -201,10 +204,10 @@ allprojects {
       java = 'SLASHSTAR_STYLE'
     }
 
-    include '**/*.gradle'
-    include '**/*.java'
-    include '**/*.xml'
-    include '**/*.pl'
+    include '**\/*.gradle'
+    include '**\/*.java'
+    include '**\/*.xml'
+    include '**\/*.pl'
   }
 
   // Each license check task gets a new "help message" task to tell the
@@ -222,3 +225,4 @@ allprojects {
     helpMessageTask.onlyIf { checkTask.state.failure != null }
   }
 }
+*/
