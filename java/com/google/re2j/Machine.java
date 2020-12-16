@@ -375,18 +375,18 @@ class Machine {
   }
 
   private Thread doAdd(Queue q, int pc, int pos, int[] cap, Thread t) {
-    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: visit "+pc);
+    //if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: visit "+pc);
     if (pc == 0) {
-    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - Fail");
+      //if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - Fail");
       return t;
     }
     if (q.contains(pc)) {
-      if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - running/visited already");
+      //if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - running/visited already");
       return t;
     }
     int d = q.add(pc);
     Inst inst = prog.inst[pc];
-    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: Add pc="+pc+" as potential thread "+d);
+    //if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: Add pc="+pc+" as potential thread "+d);
     switch (inst.op) {
       default:
         throw new IllegalStateException("unhandled");
