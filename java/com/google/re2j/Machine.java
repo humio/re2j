@@ -329,7 +329,7 @@ class Machine {
           break;
 
         case Inst.RUNE1:
-          add = c == i.runes[0];
+          add = c == i.theRune;
           break;
 
         case Inst.RUNE_ANY:

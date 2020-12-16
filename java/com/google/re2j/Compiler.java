@@ -184,6 +184,7 @@ class Compiler {
         && runes[3] == Unicode.MAX_RUNE) {
       i.op = Inst.RUNE_ANY_NOT_NL;
     }
+    if (runes.length == 1) i.theRune = (char)runes[0];
     return f;
   }
 

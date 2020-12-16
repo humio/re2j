@@ -31,6 +31,7 @@ final class Inst {
   int op;
   int out; // all but MATCH, FAIL
   int arg; // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH
+  char theRune;
   int[] runes; // length==1 => exact match
   // otherwise a list of [lo,hi] pairs.  hi is *inclusive*.
   // REVIEWERS: why not half-open intervals?
@@ -49,7 +50,7 @@ final class Inst {
     // Special case: single-rune slice is from literal string, not char
     // class.
     if (runes.length == 1) {
-      int r0 = runes[0];
+      int r0 = theRune;
       if (r == r0) {
         return true;
       }
