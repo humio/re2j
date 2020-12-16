@@ -252,6 +252,10 @@ class Machine {
           // Have match; finished exploring alternatives.
           break;
         }
+	if (!(pos == 0 || anchor == RE2.UNANCHORED)) {
+	  // Have no match and will never add any threads.
+	  break;
+	}
         if (!re2.prefix.isEmpty() && rune1 != re2.prefixRune && in.canCheckPrefix()) {
           // Match requires literal prefix; fast search for it.
           int advance = in.index(re2, pos);
