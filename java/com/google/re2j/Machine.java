@@ -360,14 +360,33 @@ class Machine {
   // gives the current position in the input.  |cond| is a bitmask of EMPTY_*
   // flags.
   private Thread add(Queue q, int pc, int pos, int[] cap, Thread t) {
+    int[] addList = this.prog.addLists[pc];
+
+    if (addList == null) {
+      // Singleton case:
+      t = doAdd(q, pc, pos, cap, t);
+    } else {
+      for (int i=0; i<addList.length; i++) {
+	t = doAdd(q, addList[i], pos, cap, t);
+      }
+    }
+
+    return t;
+  }
+
+  private Thread doAdd(Queue q, int pc, int pos, int[] cap, Thread t) {
+    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: visit "+pc);
     if (pc == 0) {
+    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - Fail");
       return t;
     }
     if (q.contains(pc)) {
+      if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: early return - running/visited already");
       return t;
     }
     int d = q.add(pc);
     Inst inst = prog.inst[pc];
+    if (RE2Flags.verboseRuntime) System.err.println("DBG doAdd: Add pc="+pc+" as potential thread "+d);
     switch (inst.op) {
       default:
         throw new IllegalStateException("unhandled");
@@ -377,8 +396,8 @@ class Machine {
 
       case Inst.ALT:
       case Inst.ALT_MATCH:
-        t = add(q, inst.out, pos, cap, t);
-        t = add(q, inst.arg, pos, cap, t);
+        t = doAdd(q, inst.out, pos, cap, t);
+        t = doAdd(q, inst.arg, pos, cap, t);
         break;
 
       case Inst.EMPTY_WIDTH:
@@ -387,22 +406,22 @@ class Machine {
 	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
 	  }
         if ((inst.arg & ~cond) == 0) {
-          t = add(q, inst.out, pos, cap, t);
+          t = doAdd(q, inst.out, pos, cap, t);
         }
         break;
 
       case Inst.NOP:
-        t = add(q, inst.out, pos, cap, t);
+        t = doAdd(q, inst.out, pos, cap, t);
         break;
 
       case Inst.CAPTURE:
         if (inst.arg < ncap) {
           int opos = cap[inst.arg];
           cap[inst.arg] = pos;
-          add(q, inst.out, pos, cap, null);
+          doAdd(q, inst.out, pos, cap, null);
           cap[inst.arg] = opos;
         } else {
-          t = add(q, inst.out, pos, cap, t);
+          t = doAdd(q, inst.out, pos, cap, t);
         }
         break;
 

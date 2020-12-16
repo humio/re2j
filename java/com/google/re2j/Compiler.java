@@ -51,6 +51,8 @@ class Compiler {
     c.prog.patch(f.out, c.newInst(Inst.MATCH).i);
     c.prog.start = f.i;
     Optimizer.optimize(c.prog);
+    NextSetCompiler.computeNextSets(c.prog);
+    if (RE2Flags.verboseCompiler) System.err.println("==== Compiled Program:\n" + c.prog);
     return c.prog;
   }
 

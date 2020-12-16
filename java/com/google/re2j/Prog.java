@@ -23,6 +23,11 @@ final class Prog {
   int numCap = 2; // number of CAPTURE insts in re
   // 2 => implicit ( and ) for whole match $0
 
+  /** Which instructions are in the "to-add" set, by starting point PC.
+   * (null means the singleton: only the starting point.)
+   */
+  int[][] addLists = null;
+
   // Constructs an empty program.
   Prog() {}
 
@@ -174,6 +179,15 @@ final class Prog {
       // Use spaces not tabs since they're not always preserved in
       // Google Java source, such as our tests.
       out.append("        ".substring(out.length() - len)).append(inst[pc]).append('\n');
+      if (addLists[pc] != null) {
+	int[] a = addLists[pc];
+	out.append("^ [");
+	for (int i=0; i<+a.length; i++) {
+	  if (i>0) out.append(",");
+	  out.append(a[i]);
+	}
+	out.append("]\n");
+      }
     }
     return out.toString();
   }
