@@ -25,6 +25,8 @@ class Optimizer {
 	if (optAltRune1(pc, inst, prog)) changes++;
 	if (optAltRune(pc, inst, prog)) changes++;
 	if (optAltRune1Overlapping(pc, inst, prog)) changes++;
+        if (optAltBranchOrder(pc, inst, prog)) changes++;
+        if (optAltBranchStructure(pc, inst, prog)) changes++;
 	// if (optRestructure(pc, inst, prog)) changes++;
 	//if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
@@ -284,6 +286,60 @@ class Optimizer {
 	return true;
     }
     return false;
+  }
+
+  /** Rewrite
+   *    ALT(RUNEx(c1) -&gt; X, RUNEx(c2) -&gt; Y
+   *  as
+   *    ALT(RUNEx(c2) -&gt; X, RUNEx(c1) -&gt; Y
+   *  if c1 and c2 are exclusive, and c2 is before c1 according to a total order.
+   */
+  private static boolean optAltBranchOrder(int pc, Inst inst, Prog prog) {
+    if (inst.op != Inst.ALT) return false;
+    Inst nextA = prog.inst[inst.out];
+    Inst nextB = prog.inst[inst.arg];
+    if (nextA.op == Inst.RUNE1 &&
+        nextB.op == Inst.RUNE1) {
+      if (nextA.arg > nextB.arg) { // Different and in the wrong order. Reorder:
+        int tmp = inst.out;
+        inst.out = inst.arg;
+        inst.arg = tmp;
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Rewrite
+   *    ALT(ALT(X,Y), Z)
+   *  as
+   *    ALT(X, ALT(Y,Z))
+   * For termination reasons, only do this if X is _not_ an ALT; we thus process structures inside-out.
+   * This is in order to help other peephole patterns.
+   */
+  private static boolean optAltBranchStructure(int pc, Inst inst, Prog prog) {
+    if (inst.op != Inst.ALT) return false;
+    Inst alt2 = prog.inst[inst.out];
+    if (alt2.op != Inst.ALT) return false;
+
+    int ipX = alt2.out;
+    Inst insX = prog.inst[ipX];
+    if (insX.op == Inst.ALT) return false; // Process inside-out to ensure termination.
+
+    int ipY = alt2.arg;
+    int ipZ = inst.arg;
+    if (ipX == pc || ipY == pc || ipZ == pc) return false; // Involved in empty-loop.
+
+    int newLabel = newInst(Inst.ALT, prog);
+    Inst newInst = prog.inst[newLabel];
+    newInst.out = ipY;
+    newInst.arg = ipZ;
+    inst.out = ipX;
+    inst.arg = newLabel;
+
+    return true;
   }
 
   /** Detect trailing single-rune loops:
