@@ -28,6 +28,7 @@ class Optimizer {
         if (optAltBranchOrder(pc, inst, prog)) changes++;
         if (optAltBranchStructure(pc, inst, prog)) changes++;
         if (optAltARune1ARune1(pc, inst, prog)) changes++;
+        if (optAltARune1Rune1(pc, inst, prog)) changes++;
 	// if (optRestructure(pc, inst, prog)) changes++;
 	//if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
@@ -290,7 +291,7 @@ class Optimizer {
   }
 
   /** Rewrite
-   *    ALT(ALT_RUNEx(c1,X,Y), ALT_RUNEx(c2,U,V)
+   *    ALT(ALT_RUNEx(c1,X,Y), ALT_RUNEx(c2,U,V))
    *  as
    *    ALT_RUNEx(c1, ALT(X,U), ALT(Y,V))
    *  if c1 == c2.
@@ -319,6 +320,53 @@ class Optimizer {
 	inst.theRune = nextA.theRune;
 	inst.out = newAlt1Label;
 	inst.arg = newAlt2Label;
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Rewrite
+   *    ALT(ALT_RUNEx(c1,X,Y), RUNEx(c2,U))
+   *  as
+   *    ALT_RUNEx(c1, ALT(X,U), Y)
+   *  if c1 == c2
+   *  and as
+   *    ALT_RUNEx(c1, X, ALT(Y, RUNEx(c2,U))
+   *  if c1 != c2.
+   */
+  private static boolean optAltARune1Rune1(int pc, Inst inst, Prog prog) {
+    if (inst.op != Inst.ALT) return false;
+    Inst nextA = prog.inst[inst.out];
+    Inst nextB = prog.inst[inst.arg];
+    if (nextA.op == Inst.ALT_RUNE1 &&
+        nextB.op == Inst.RUNE1) {
+      if (nextA.theRune == nextB.theRune) {
+	int newAltLabel = newInst(Inst.ALT, prog);
+	Inst newAlt = prog.inst[newAltLabel];
+	newAlt.out = nextA.out;
+	newAlt.arg = nextB.out;
+
+	inst.op = Inst.ALT_RUNE1;
+	inst.runes = nextA.runes;
+	inst.theRune = nextA.theRune;
+	inst.out = newAltLabel;
+	inst.arg = nextA.arg;
+
+        return true;
+      } else {
+	int newAltLabel = newInst(Inst.ALT, prog);
+	Inst newAlt = prog.inst[newAltLabel];
+	newAlt.out = nextA.arg;
+	newAlt.arg = inst.arg; // -> nextB
+
+	inst.op = Inst.ALT_RUNE1;
+	inst.runes = nextA.runes;
+	inst.theRune = nextA.theRune;
+	inst.out = nextA.out;
+	inst.arg = newAltLabel;
 
         return true;
       }
