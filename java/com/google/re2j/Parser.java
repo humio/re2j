@@ -1423,6 +1423,19 @@ class Parser {
         }
         return x * 16 + y;
 
+      case 'u':
+	{
+	  int tmp = 0;
+	  for (int i=0; i<4; i++) {
+	    if (!t.more()) {
+	      break bigswitch;
+	    }
+	    c = t.pop();
+	    tmp = tmp * 16 + Utils.unhex(c);
+	  }
+	  return tmp;
+	}
+
         // C escapes.  There is no case 'b', to avoid misparsing
         // the Perl word-boundary \b as the C backspace \b
         // when in POSIX mode.  In Perl, /\b/ means word-boundary
