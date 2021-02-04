@@ -27,6 +27,7 @@ class Optimizer {
 	if (optAltRune1Overlapping(pc, inst, prog)) changes++;
         if (optAltBranchOrder(pc, inst, prog)) changes++;
         if (optAltBranchStructure(pc, inst, prog)) changes++;
+        if (optAltARune1ARune1(pc, inst, prog)) changes++;
 	// if (optRestructure(pc, inst, prog)) changes++;
 	//if (optTrailingSingleRuneLoop(pc, inst, prog)) changes++;
       }
@@ -285,6 +286,44 @@ class Optimizer {
 	inst.arg = newAltLabel;
 	return true;
     }
+    return false;
+  }
+
+  /** Rewrite
+   *    ALT(ALT_RUNEx(c1,X,Y), ALT_RUNEx(c2,U,V)
+   *  as
+   *    ALT_RUNEx(c1, ALT(X,U), ALT(Y,V))
+   *  if c1 == c2.
+   *  TODO: Handle c1 != c2 case.
+   */
+  private static boolean optAltARune1ARune1(int pc, Inst inst, Prog prog) {
+    if (inst.op != Inst.ALT) return false;
+    Inst nextA = prog.inst[inst.out];
+    Inst nextB = prog.inst[inst.arg];
+    if (nextA.op == Inst.ALT_RUNE1 &&
+        nextB.op == Inst.ALT_RUNE1) {
+      if (nextA.theRune == nextB.theRune) {
+
+	int newAlt1Label = newInst(Inst.ALT, prog);
+	Inst newAlt1 = prog.inst[newAlt1Label];
+	newAlt1.out = nextA.out;
+	newAlt1.arg = nextB.out;
+
+	int newAlt2Label = newInst(Inst.ALT, prog);
+	Inst newAlt2 = prog.inst[newAlt2Label];
+	newAlt2.out = nextA.arg;
+	newAlt2.arg = nextB.arg;
+
+	inst.op = Inst.ALT_RUNE1;
+	inst.runes = nextA.runes;
+	inst.theRune = nextA.theRune;
+	inst.out = newAlt1Label;
+	inst.arg = newAlt2Label;
+
+        return true;
+      }
+    }
+
     return false;
   }
 
