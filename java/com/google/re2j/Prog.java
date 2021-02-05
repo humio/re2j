@@ -95,7 +95,7 @@ final class Prog {
       Inst i = inst[pc];
       switch (i.op) {
         case Inst.EMPTY_WIDTH:
-          flag |= i.arg;
+          if (i.arg2 == 0) flag |= i.arg;
           break;
         case Inst.FAIL:
           return -1;

@@ -155,7 +155,9 @@ class Compiler {
   // op is a bitmask of EMPTY_* flags.
   private Frag empty(int op) {
     Frag f = newInst(Inst.EMPTY_WIDTH);
-    prog.getInst(f.i).arg = op;
+    Inst inst = prog.getInst(f.i);
+    inst.arg = op;
+    inst.arg2 = 0;
     f.out = f.i << 1;
     return f;
   }

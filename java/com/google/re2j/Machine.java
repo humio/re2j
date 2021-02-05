@@ -487,10 +487,18 @@ class Machine {
         throw new IllegalStateException("unhandled");
 
       case Inst.EMPTY_WIDTH:
-	  int cond = this.curFlag;
+	int cond;
+	int delta = inst.arg2;
+	if (delta == 0) {
+	  cond = this.curFlag;
 	  if (cond < 0) {
-	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	    cond = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	    this.curFlag = cond;
 	  }
+	} else {
+	  int effpos = pos - delta;
+	  cond = (effpos == 0)? Utils.emptyOpContext(-1, theInput.step(effpos) >> 3) : theInput.context(effpos);
+	}
         if ((inst.arg & ~cond) == 0) {
 	    t = add0(q, inst.out, pos, cap/*, cond*/, t);
         }
@@ -558,10 +566,18 @@ class Machine {
         break;
 
       case Inst.EMPTY_WIDTH:
-	  int cond = this.curFlag;
+	int cond;
+	int delta = inst.arg2;
+	if (delta == 0) {
+	  cond = this.curFlag;
 	  if (cond < 0) {
-	      cond = this.curFlag = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	    cond = (pos == 0)? Utils.emptyOpContext(-1, theInput.step(pos) >> 3) : theInput.context(pos);
+	    this.curFlag = cond;
 	  }
+	} else {
+	  int effpos = pos - delta;
+	  cond = (effpos == 0)? Utils.emptyOpContext(-1, theInput.step(effpos) >> 3) : theInput.context(effpos);
+	}
         if ((inst.arg & ~cond) == 0) {
           t = add(q, inst.out, pos, cap/*, cond*/, t);
         }
