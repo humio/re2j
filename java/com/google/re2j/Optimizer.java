@@ -436,7 +436,7 @@ class Optimizer {
    *    RUNEx(...) -> EMPTY_WIDTH(cond,delta=1)
    */
   private static boolean optEmptyWidthRune(int pc, Inst inst, Prog prog) {
-    if (inst.op == Inst.EMPTY_WIDTH && inst.arg2 == 0) {
+    if (inst.op == Inst.EMPTY_WIDTH/* && inst.arg2 == 0*/) {
       Inst instA = prog.inst[inst.out];
       if (instA.op == Inst.RUNE1 || instA.op == Inst.RUNE) { // Not any/anynotnl
 	int newLabel = newInst(Inst.EMPTY_WIDTH, prog);
